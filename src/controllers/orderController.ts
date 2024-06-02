@@ -2,6 +2,7 @@
 import { Request, Response } from 'express';
 import { Farmer } from '../models/Farmer';
 import { Order } from '../models/Order';
+import SendNotification from "../utils/sendMailer";
 
 export const createOrder = async (req: Request, res: Response) => {
   try {
@@ -60,14 +61,15 @@ export const updateOrderStatus = async (req: Request, res: Response) => {
     const { orderId, status } = req.body;
     console.log(orderId)
 
-    const order = await Order.findById(orderId);
+    const order:any = await Order.findById(orderId).populate('farmer');
 
     if (!order) {
       return res.status(404).send('Order not found');
     }
-
+    const url = `you order staus is changed to ${status}`;
     order.status = status;
     await order.save();
+    await SendNotification.sendEmail(order.farmer.email, url);
 
     res.status(200).send(order);
   } catch (error) {
